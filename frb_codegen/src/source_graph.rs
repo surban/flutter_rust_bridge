@@ -240,6 +240,9 @@ impl Module {
                 }
                 syn::Item::Mod(item_mod) => {
                     let ident = item_mod.ident.clone();
+                    if ident.to_string() != "api" {
+                        continue;
+                    }
 
                     let mut module_path = self.module_path.clone();
                     module_path.push(ident.to_string());
