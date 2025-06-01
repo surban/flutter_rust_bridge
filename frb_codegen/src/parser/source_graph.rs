@@ -357,9 +357,14 @@ impl Module {
                                         let source_rust_content =
                                             fs::read_to_string(&file_path).unwrap();
                                         debug!("Trying to parse {:?}", file_path);
-                                        Some(ModuleSource::File(
-                                            syn::parse_file(&source_rust_content).unwrap(),
-                                        ))
+                                        let parsed = match syn::parse_file(&source_rust_content) {
+                                            Ok(parsed) => parsed,
+                                            Err(err) => {
+                                                warn!("Skipping module {ident} that failed to parse: {err}");
+                                                continue;
+                                            }
+                                        };
+                                        Some(ModuleSource::File(parsed))
                                     };
                                     let mut child_module = Module {
                                         visibility: syn_vis_to_visibility(&item_mod.vis),
