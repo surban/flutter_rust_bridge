@@ -9,9 +9,11 @@
 
 use std::{
     collections::HashMap,
+    env,
     fmt::Debug,
     fs,
     path::{Path, PathBuf},
+    sync::LazyLock,
 };
 
 use cargo_metadata::MetadataCommand;
@@ -353,6 +355,10 @@ impl Module {
 
                             match file_path {
                                 Ok(file_path) => {
+                                    if Self::should_skip(&file_path) {
+                                        warn!("Skipping module {ident} as requested");
+                                        continue;
+                                    }
                                     let source = {
                                         let source_rust_content =
                                             fs::read_to_string(&file_path).unwrap();
@@ -477,6 +483,16 @@ impl Module {
         let mut ans = HashMap::new();
         self.collect_types(&mut ans);
         ans
+    }
+
+    fn should_skip(path: &Path) -> bool {
+        static SKIP: LazyLock<Vec<String>> = LazyLock::new(|| match env::var("FRB_SKIP") {
+            Ok(skip) => skip.split(',').map(|s| s.trim().to_string()).collect(),
+            Err(_) => Vec::new(),
+        });
+
+        let path = path.to_string_lossy();
+        SKIP.iter().any(|s| path.ends_with(s))
     }
 }
 
